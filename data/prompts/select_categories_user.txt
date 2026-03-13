@@ -1,0 +1,6 @@
+El usuario ha solicitado noticias sobre: "{user_request}"
+
+Selecciona las categorías de RSS más apropiadas para esta petición. Recuerda:
+- SIEMPRE incluir "general"
+- Máximo 3 categorías adicionales específicas
+- Responde SOLO con el JSON

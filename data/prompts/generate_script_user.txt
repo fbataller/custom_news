@@ -1,0 +1,16 @@
+TEMA SOLICITADO POR EL USUARIO: "{user_request}"
+
+NOTICIAS A INCLUIR EN EL GUION:
+
+{news_content}
+
+---
+
+Redacta un guion de radio/podcast informativo de aproximadamente {duration_minutes} minutos ({target_words} palabras aproximadamente) que resuma estas noticias de forma profesional y entretenida.
+
+El guion debe:
+- Comenzar con una apertura que enganche al oyente
+- Desarrollar las noticias de forma fluida y conectada
+- Terminar con un cierre memorable
+
+Escribe SOLO el texto del guion, sin explicaciones adicionales.

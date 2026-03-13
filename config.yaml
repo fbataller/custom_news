@@ -1,0 +1,86 @@
+# ===========================================
+# CUSTOM NEWS APP - CONFIGURACIÓN PRINCIPAL
+# ===========================================
+
+# Configuración de la aplicación
+app:
+  name: "Custom News"
+  version: "0.1.0"
+  debug: false
+  
+# Configuración del LLM
+llm:
+  provider: "openai"  # openai, anthropic, groq, ollama
+  model: "gpt-4o"
+  temperature: 0.7
+  max_tokens: 4096
+  
+# Configuración del TTS
+tts:
+  provider: "openai"  # openai, elevenlabs, google, azure
+  model: "tts-1"
+  voice: "nova"  # alloy, echo, fable, onyx, nova, shimmer
+  speed: 1.0
+  output_format: "mp3"
+
+# Configuración del audio
+audio:
+  target_duration_minutes: 5
+  words_per_minute: 150  # Velocidad de lectura estimada
+  output_directory: "audio_output"
+  retention_days: 2  # Días que se mantienen los audios
+
+# Configuración del caché
+cache:
+  enabled: true
+  news_cache_hours: 3  # Horas que se cachean las noticias
+  feeds_cache_minutes: 30  # Minutos que se cachean los feeds RSS
+  
+# Configuración de RSS
+rss:
+  feeds_file: "data/rss_feeds.yaml"
+  timeout_seconds: 30
+  max_articles_per_feed: 20
+  
+# Configuración de scraping
+scraper:
+  timeout_seconds: 15
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  max_article_length: 10000  # Caracteres máximos por artículo
+
+# Configuración de usuarios
+users:
+  max_scheduled_news: 3  # Máximo de noticias programadas por usuario
+  max_ondemand_per_day: 3  # Máximo de peticiones on-demand por día
+  default_timezone: "Europe/Madrid"
+
+# Configuración del scheduler
+scheduler:
+  check_interval_minutes: 1
+  cleanup_interval_hours: 6  # Cada cuánto se limpian audios antiguos
+
+# Configuración de Telegram
+telegram:
+  enabled: true
+  admin_chat_ids: []  # IDs de Telegram de administradores (ej: [123456789, 987654321])
+  
+# Configuración de Streamlit
+streamlit:
+  enabled: true
+  port: 8501
+  theme: "dark"
+
+# Configuración de la base de datos
+database:
+  url: "sqlite+aiosqlite:///./data/news_app.db"
+  echo: false  # Mostrar queries SQL
+
+# Prompts
+prompts:
+  directory: "data/prompts"
+  
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/app.log"

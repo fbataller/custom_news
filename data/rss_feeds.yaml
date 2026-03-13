@@ -1,0 +1,127 @@
+# ===========================================
+# CUSTOM NEWS APP - FUENTES RSS
+# ===========================================
+# Organizado por categorías
+# Cada categoría tiene un ID, nombre y lista de feeds
+# Cada feed tiene nombre y URL
+
+categories:
+  general:
+    name: "General / España"
+    description: "Noticias generalistas de España"
+    feeds:
+      - name: "El País"
+        url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada"
+      - name: "El Mundo"
+        url: "https://e00-elmundo.uecdn.es/rss/portada.xml"
+      - name: "La Vanguardia"
+        url: "https://www.lavanguardia.com/rss/home.xml"
+      - name: "ABC"
+        url: "https://www.abc.es/rss/feeds/abcPortada.xml"
+      - name: "elDiario.es"
+        url: "https://www.eldiario.es/rss/"
+      - name: "El Confidencial"
+        url: "https://rss.elconfidencial.com/espana/"
+
+  world:
+    name: "Mundo / Geopolítica"
+    description: "Noticias internacionales y geopolítica"
+    feeds:
+      - name: "Reuters"
+        url: "http://feeds.reuters.com/reuters/worldNews"
+      - name: "BBC News"
+        url: "http://feeds.bbci.co.uk/news/world/rss.xml"
+      - name: "Al Jazeera"
+        url: "https://www.aljazeera.com/xml/rss/all.xml"
+      - name: "The Guardian"
+        url: "https://www.theguardian.com/world/rss"
+      - name: "The New York Times"
+        url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+
+  economy:
+    name: "Economía / Negocios"
+    description: "Noticias económicas, financieras y de negocios"
+    feeds:
+      - name: "Financial Times"
+        url: "https://www.ft.com/rss/home"
+      - name: "Bloomberg"
+        url: "https://feeds.bloomberg.com/markets/news.rss"
+      - name: "CNBC"
+        url: "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+      - name: "MarketWatch"
+        url: "https://feeds.marketwatch.com/marketwatch/topstories/"
+      - name: "Yahoo Finance"
+        url: "https://finance.yahoo.com/news/rssindex"
+      - name: "Expansión"
+        url: "https://e00-expansion.uecdn.es/rss/portada.xml"
+      - name: "Cinco Días"
+        url: "https://cincodias.elpais.com/seccion/rss/"
+
+  technology:
+    name: "Tecnología"
+    description: "Noticias de tecnología, startups e innovación"
+    feeds:
+      - name: "TechCrunch"
+        url: "https://techcrunch.com/feed/"
+      - name: "The Verge"
+        url: "https://www.theverge.com/rss/index.xml"
+      - name: "Ars Technica"
+        url: "https://feeds.arstechnica.com/arstechnica/index"
+      - name: "Wired"
+        url: "https://www.wired.com/feed/rss"
+      - name: "MIT Technology Review"
+        url: "https://www.technologyreview.com/feed/"
+
+  science:
+    name: "Ciencia / Espacio"
+    description: "Noticias científicas y del espacio"
+    feeds:
+      - name: "NASA"
+        url: "https://www.nasa.gov/rss/dyn/breaking_news.rss"
+      - name: "Science Magazine"
+        url: "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science"
+      - name: "Nature"
+        url: "https://www.nature.com/nature.rss"
+      - name: "Scientific American"
+        url: "https://www.scientificamerican.com/feed/rss/"
+      - name: "Space.com"
+        url: "https://www.space.com/feeds/all"
+
+  environment:
+    name: "Medio Ambiente / Energía"
+    description: "Noticias sobre medio ambiente, clima y energía"
+    feeds:
+      - name: "Carbon Brief"
+        url: "https://www.carbonbrief.org/feed/"
+      - name: "Inside Climate News"
+        url: "https://insideclimatenews.org/feed/"
+      - name: "Yale Environment 360"
+        url: "https://e360.yale.edu/feed"
+      - name: "The Guardian Environment"
+        url: "https://www.theguardian.com/environment/rss"
+      - name: "CleanTechnica"
+        url: "https://cleantechnica.com/feed/"
+
+  sports:
+    name: "Deportes"
+    description: "Noticias deportivas"
+    feeds:
+      - name: "ESPN"
+        url: "https://www.espn.com/espn/rss/news"
+      - name: "Sky Sports"
+        url: "https://www.skysports.com/rss/12040"
+      - name: "Marca"
+        url: "https://e00-marca.uecdn.es/rss/portada.xml"
+      - name: "AS"
+        url: "https://as.com/rss/tags/ultimas_noticias.xml"
+
+  culture:
+    name: "Cultura / Sociedad"
+    description: "Noticias de cultura, entretenimiento y sociedad"
+    feeds:
+      - name: "Rolling Stone"
+        url: "https://www.rollingstone.com/feed/"
+      - name: "Variety"
+        url: "https://variety.com/feed/"
+      - name: "The Guardian Culture"
+        url: "https://www.theguardian.com/culture/rss"

@@ -1,0 +1,7 @@
+PETICIÓN DEL USUARIO: "{user_request}"
+
+NOTICIAS DISPONIBLES:
+{news_list}
+
+Selecciona las noticias más relevantes para la petición del usuario (entre 5 y 12 noticias).
+Responde SOLO con el JSON de IDs seleccionados.
