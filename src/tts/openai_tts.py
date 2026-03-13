@@ -3,6 +3,7 @@ Cliente TTS de OpenAI.
 """
 
 import logging
+import inspect
 from pathlib import Path
 from typing import Optional
 import uuid
@@ -99,8 +100,7 @@ class OpenAITTS(BaseTTSClient):
         
         # Guardar el audio
         with open(output_path, "wb") as f:
-            async for chunk in response.iter_bytes():
-                f.write(chunk)
+            await self._write_response_bytes(response, f)
     
     async def _generate_chunked_audio(
         self,
@@ -109,9 +109,6 @@ class OpenAITTS(BaseTTSClient):
         max_chars: int
     ) -> None:
         """Genera audio en chunks y los combina."""
-        import tempfile
-        import os
-        
         # Dividir el texto en chunks por oraciones
         chunks = self._split_text_by_sentences(text, max_chars)
         
@@ -131,8 +128,7 @@ class OpenAITTS(BaseTTSClient):
                 )
                 
                 with open(temp_path, "wb") as f:
-                    async for audio_chunk in response.iter_bytes():
-                        f.write(audio_chunk)
+                    await self._write_response_bytes(response, f)
                 
                 temp_files.append(temp_path)
             
@@ -190,6 +186,21 @@ class OpenAITTS(BaseTTSClient):
     async def get_available_voices(self) -> list[str]:
         """Obtiene las voces disponibles en OpenAI TTS."""
         return self.AVAILABLE_VOICES
+
+    async def _write_response_bytes(self, response, file_obj) -> None:
+        """Escribe bytes de respuesta OpenAI soportando iteradores sync y async."""
+        iterator = response.iter_bytes()
+
+        if hasattr(iterator, "__aiter__"):
+            async for chunk in iterator:
+                file_obj.write(chunk)
+            return
+
+        if inspect.isawaitable(iterator):
+            iterator = await iterator
+
+        for chunk in iterator:
+            file_obj.write(chunk)
 
 
 def get_tts_client() -> BaseTTSClient:

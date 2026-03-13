@@ -7,6 +7,7 @@ import asyncio
 from datetime import datetime
 from pathlib import Path
 import sys
+from sqlalchemy import func
 
 # Añadir el directorio raíz al path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -18,7 +19,109 @@ from src.database.crud import (
     sync_get_recent_requests,
     sync_get_user_by_telegram_id,
 )
-from src.database.models import get_sync_session, User, ScheduledNews, NewsRequest
+from src.database.models import get_sync_session, User, ScheduledNews, NewsRequest, DailyUsage
+from src.pipeline import generate_news
+
+
+def _run_async(coro):
+    """Ejecuta una coroutine desde contexto síncrono de Streamlit."""
+    return asyncio.run(coro)
+
+
+def _get_or_create_web_user(telegram_id: str) -> User:
+    """Obtiene o crea un usuario para operaciones desde web."""
+    session = get_sync_session()
+    try:
+        user = session.query(User).filter(User.telegram_id == telegram_id).first()
+        if user is None:
+            user = User(
+                telegram_id=telegram_id,
+                username=f"web_{telegram_id}" if telegram_id != "web_dashboard" else "web_dashboard",
+            )
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+        return user
+    finally:
+        session.close()
+
+
+def _get_ondemand_count_today(user_id: int) -> int:
+    """Obtiene el número de peticiones on-demand del día para un usuario."""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    session = get_sync_session()
+    try:
+        usage = session.query(DailyUsage).filter(
+            DailyUsage.user_id == user_id,
+            DailyUsage.date == today,
+        ).first()
+        return usage.ondemand_count if usage else 0
+    finally:
+        session.close()
+
+
+def _increment_daily_usage(user_id: int, request_type: str = "ondemand") -> None:
+    """Incrementa el uso diario para on-demand o scheduled."""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    session = get_sync_session()
+    try:
+        usage = session.query(DailyUsage).filter(
+            DailyUsage.user_id == user_id,
+            DailyUsage.date == today,
+        ).first()
+        if usage is None:
+            usage = DailyUsage(user_id=user_id, date=today, ondemand_count=0, scheduled_count=0)
+            session.add(usage)
+
+        if request_type == "ondemand":
+            usage.ondemand_count += 1
+        else:
+            usage.scheduled_count += 1
+
+        session.commit()
+    finally:
+        session.close()
+
+
+def _create_news_request(user_id: int, topic: str) -> int:
+    """Crea una petición de noticias y devuelve su ID."""
+    session = get_sync_session()
+    try:
+        req = NewsRequest(user_id=user_id, topic=topic, request_type="ondemand", status="pending")
+        session.add(req)
+        session.commit()
+        session.refresh(req)
+        return req.id
+    finally:
+        session.close()
+
+
+def _complete_news_request(request_id: int, audio_path: str, script: str) -> None:
+    """Marca la petición como completada."""
+    session = get_sync_session()
+    try:
+        req = session.query(NewsRequest).filter(NewsRequest.id == request_id).first()
+        if req:
+            req.status = "completed"
+            req.audio_path = audio_path
+            req.script_text = script
+            req.completed_at = datetime.utcnow()
+            session.commit()
+    finally:
+        session.close()
+
+
+def _fail_news_request(request_id: int, error_message: str) -> None:
+    """Marca la petición como fallida."""
+    session = get_sync_session()
+    try:
+        req = session.query(NewsRequest).filter(NewsRequest.id == request_id).first()
+        if req:
+            req.status = "failed"
+            req.error_message = error_message
+            session.commit()
+    finally:
+        session.close()
 
 # Configuración de la página
 st.set_page_config(
@@ -143,35 +246,54 @@ def show_generate_page():
         if not topic:
             st.error("Por favor, introduce un tema.")
             return
-        
-        st.info("⏳ Generando resumen de noticias... Esto puede tardar 1-2 minutos.")
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        # Aquí se llamaría al pipeline de generación
-        # Por ahora mostramos un placeholder
-        
-        import time
-        steps = [
-            "Seleccionando categorías RSS...",
-            "Descargando feeds...",
-            "Filtrando noticias relevantes...",
-            "Extrayendo contenido completo...",
-            "Generando guion...",
-            "Convirtiendo a audio...",
-        ]
-        
-        for i, step in enumerate(steps):
-            status_text.text(step)
-            progress_bar.progress((i + 1) / len(steps))
-            time.sleep(0.5)  # Simulación
-        
-        st.success("✅ Audio generado correctamente!")
-        st.info(
-            "⚠️ Esta es una demo. Para generar audio real, "
-            "ejecuta el servidor completo con `python -m src.main`"
-        )
+
+        effective_telegram_id = telegram_id.strip() if telegram_id else "web_dashboard"
+        config = get_config()
+        request_id = None
+
+        with st.spinner("⏳ Generando resumen real... Esto puede tardar 1-3 minutos."):
+            try:
+                user = _get_or_create_web_user(effective_telegram_id)
+                ondemand_today = _get_ondemand_count_today(user.id)
+
+                if ondemand_today >= config.users.max_ondemand_per_day:
+                    st.error(
+                        f"❌ Has alcanzado el límite diario de {config.users.max_ondemand_per_day} peticiones."
+                    )
+                    return
+
+                request_id = _create_news_request(user.id, topic)
+                result = _run_async(generate_news(user.id, topic))
+
+                if not result:
+                    raise RuntimeError("No se pudo generar el audio para este tema.")
+
+                audio_path, script = result
+                audio_path = Path(audio_path)
+
+                _complete_news_request(request_id, str(audio_path), script)
+                _increment_daily_usage(user.id, "ondemand")
+
+                st.success("✅ Audio generado correctamente")
+                st.write(f"Tema: **{topic}**")
+                st.write(f"Duración solicitada: **{duration} min**")
+
+                if audio_path.exists():
+                    audio_bytes = audio_path.read_bytes()
+                    st.audio(audio_bytes, format="audio/mp3")
+                    st.download_button(
+                        "⬇️ Descargar audio",
+                        data=audio_bytes,
+                        file_name=audio_path.name,
+                        mime="audio/mpeg",
+                    )
+                else:
+                    st.warning("El audio se generó, pero no se encontró el archivo en disco.")
+
+            except Exception as e:
+                if request_id is not None:
+                    _fail_news_request(request_id, str(e))
+                st.error(f"❌ Error al generar noticias: {e}")
 
 
 def show_schedule_page():
@@ -205,14 +327,40 @@ def show_schedule_page():
         if not telegram_id or not topic:
             st.error("Por favor, completa todos los campos.")
         else:
-            st.success(
-                f"✅ Programación creada!\n"
-                f"Recibirás noticias sobre '{topic}' a las {schedule_time}."
-            )
-            st.info(
-                "⚠️ Esta es una demo. Para programar realmente, "
-                "usa el bot de Telegram: /schedule HH:MM tema"
-            )
+            try:
+                config = get_config()
+                user = _get_or_create_web_user(telegram_id.strip())
+
+                session = get_sync_session()
+                try:
+                    current_count = session.query(func.count(ScheduledNews.id)).filter(
+                        ScheduledNews.user_id == user.id,
+                        ScheduledNews.is_active == True,
+                    ).scalar() or 0
+
+                    if current_count >= config.users.max_scheduled_news:
+                        st.error(
+                            f"❌ Ya tienes el máximo de {config.users.max_scheduled_news} noticias programadas."
+                        )
+                    else:
+                        scheduled = ScheduledNews(
+                            user_id=user.id,
+                            topic=topic,
+                            hour=schedule_time.hour,
+                            minute=schedule_time.minute,
+                        )
+                        session.add(scheduled)
+                        session.commit()
+                        session.refresh(scheduled)
+
+                        st.success(
+                            f"✅ Programación creada (ID: {scheduled.id})\n"
+                            f"Recibirás noticias sobre '{topic}' a las {schedule_time.strftime('%H:%M')}."
+                        )
+                finally:
+                    session.close()
+            except Exception as e:
+                st.error(f"❌ Error creando la programación: {e}")
     
     st.markdown("---")
     
@@ -285,7 +433,7 @@ def show_stats_page():
                     "Activo": "✅" if user.is_active else "❌",
                 })
             
-            st.dataframe(user_data, use_container_width=True)
+            st.dataframe(user_data, width="stretch")
         else:
             st.info("No hay usuarios registrados.")
         
@@ -308,7 +456,7 @@ def show_stats_page():
                     "Tiempo (s)": f"{req.processing_time_seconds:.1f}" if req.processing_time_seconds else "N/A",
                 })
             
-            st.dataframe(request_data, use_container_width=True)
+            st.dataframe(request_data, width="stretch")
         else:
             st.info("No hay peticiones registradas.")
             

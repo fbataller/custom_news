@@ -4,6 +4,7 @@ Modelos de base de datos SQLAlchemy.
 
 from datetime import datetime
 from typing import Optional
+import sys
 from sqlalchemy import (
     Column,
     Integer,
@@ -195,6 +196,14 @@ async def init_database() -> None:
         class_=AsyncSession,
         expire_on_commit=False,
     )
+
+    # Propagar la nueva sesión a módulos que hicieron
+    # `from src.database.models import AsyncSessionLocal`
+    for module in list(sys.modules.values()):
+        if module is None:
+            continue
+        if hasattr(module, "AsyncSessionLocal"):
+            setattr(module, "AsyncSessionLocal", AsyncSessionLocal)
     
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

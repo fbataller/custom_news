@@ -6,7 +6,7 @@ import asyncio
 import hashlib
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from pathlib import Path
 
@@ -150,12 +150,38 @@ class RSSParser:
                     published_at = None
                     if hasattr(entry, "published"):
                         try:
-                            published_at = date_parser.parse(entry.published)
+                            published_at = date_parser.parse(
+                                entry.published,
+                                tzinfos={
+                                    "EST": -5 * 3600,
+                                    "EDT": -4 * 3600,
+                                    "CST": -6 * 3600,
+                                    "CDT": -5 * 3600,
+                                    "MST": -7 * 3600,
+                                    "MDT": -6 * 3600,
+                                    "PST": -8 * 3600,
+                                    "PDT": -7 * 3600,
+                                },
+                            )
+                            published_at = self._normalize_datetime(published_at)
                         except Exception:
                             pass
                     elif hasattr(entry, "updated"):
                         try:
-                            published_at = date_parser.parse(entry.updated)
+                            published_at = date_parser.parse(
+                                entry.updated,
+                                tzinfos={
+                                    "EST": -5 * 3600,
+                                    "EDT": -4 * 3600,
+                                    "CST": -6 * 3600,
+                                    "CDT": -5 * 3600,
+                                    "MST": -7 * 3600,
+                                    "MDT": -6 * 3600,
+                                    "PST": -8 * 3600,
+                                    "PDT": -7 * 3600,
+                                },
+                            )
+                            published_at = self._normalize_datetime(published_at)
                         except Exception:
                             pass
                     
@@ -227,6 +253,12 @@ class RSSParser:
         
         logger.info(f"Fetched {len(all_articles)} total articles from category {category_id}")
         return all_articles
+
+    def _normalize_datetime(self, dt: datetime) -> datetime:
+        """Normaliza fechas a UTC sin timezone (naive) para comparaciones consistentes."""
+        if dt.tzinfo is None:
+            return dt
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
     
     async def fetch_categories(self, category_ids: list[str]) -> dict[str, list[RSSArticle]]:
         """Obtiene artículos de múltiples categorías."""

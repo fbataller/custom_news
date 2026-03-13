@@ -259,8 +259,13 @@ async def increment_daily_usage(
     usage = await get_daily_usage(session, user_id, today)
     
     if usage is None:
-        usage = DailyUsage(user_id=user_id, date=today)
+        usage = DailyUsage(user_id=user_id, date=today, ondemand_count=0, scheduled_count=0)
         session.add(usage)
+
+    if usage.ondemand_count is None:
+        usage.ondemand_count = 0
+    if usage.scheduled_count is None:
+        usage.scheduled_count = 0
     
     if request_type == "ondemand":
         usage.ondemand_count += 1
@@ -276,7 +281,9 @@ async def get_ondemand_count_today(session: AsyncSession, user_id: int) -> int:
     """Obtiene el número de peticiones on-demand de hoy."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
     usage = await get_daily_usage(session, user_id, today)
-    return usage.ondemand_count if usage else 0
+    if not usage or usage.ondemand_count is None:
+        return 0
+    return usage.ondemand_count
 
 
 # ============== CACHÉ DE NOTICIAS ==============

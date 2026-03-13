@@ -1,0 +1,4 @@
+.env
+.venv/
+audio_output/
+data/news_app.db
